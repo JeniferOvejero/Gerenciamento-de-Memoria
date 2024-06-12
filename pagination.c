@@ -10,6 +10,7 @@ typedef struct {
     int process_size;
     int *page_table;
     int num_pages;
+    unsigned char *logical_memory; 
 } Process;
 
 typedef struct {
@@ -26,6 +27,8 @@ typedef struct {
     int max_process_size;
     PhysicalMemory physical_memory;
 } MemoryManager;
+
+//Tabela de páginas
 
 // Function declarations
 void initialize_memory(MemoryManager *mm, int physical_size, int page_size, int max_process_size);
@@ -88,9 +91,11 @@ void initialize_memory(MemoryManager *mm, int physical_size, int page_size, int 
     mm->num_processes = 0;
     mm->max_process_size = max_process_size;
 
-    for (int i = 0; i < mm->physical_memory.num_frames; i++) {
+    printf("Creating physical memory...");
+    for (int i = 0; i < mm->physical_memory.size; i++) { //num_frames 
+        //printf("%d", mm->physical_memory.memory[i * page_size]);
         mm->physical_memory.free_frames[i] = true;
-        mm->physical_memory.memory[i * page_size] = -1; // -1 indica que está livre
+        mm->physical_memory.memory[i] = -1; // -1 indica que está livre
     }
 }
 
@@ -109,7 +114,7 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
             free_frames_count++;
         }
         if (free_frames_count >= free_frames_needed) {
-            break;
+            break; //Tem quadros suficiente
         }
     }
 
@@ -122,15 +127,27 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
     new_process->process_id = process_id;
     new_process->process_size = process_size;
     new_process->num_pages = num_pages;
-    new_process->page_table = (int *)malloc(num_pages * sizeof(int));
+    new_process->page_table = (int *)malloc(num_pages * sizeof(int)); //Add adress of free spaces on physical memory
+    new_process->logical_memory = (unsigned char *)malloc(process_size * sizeof(unsigned char));
+
+    srand(time(NULL));
+    for (int i = 0; i < process_size; i++) {
+        new_process->logical_memory[i] = rand() % 256;
+    }
 
     int pages_allocated = 0;
+    printf("Criando tabela de páginas");
     for (int i = 0; i < mm->physical_memory.num_frames && pages_allocated < num_pages; i++) {
         if (mm->physical_memory.free_frames[i]) {
-            mm->physical_memory.free_frames[i] = false;
+            mm->physical_memory.free_frames[i] = false; 
             new_process->page_table[pages_allocated++] = i;
-            // Simulating random initialization of the page with process ID
-            mm->physical_memory.memory[i * mm->physical_memory.page_size] = process_id;
+            //printf("%d", new_process->page_table[pages_allocated]);
+            //Não adicionar false, mas sim o dado
+            // Copia os dados da página lógica para a memória física
+            for (int j = 0; j < mm->physical_memory.page_size && (pages_allocated - 1) * mm->physical_memory.page_size + j < process_size; j++) {
+                mm->physical_memory.memory[i * mm->physical_memory.page_size + j] = new_process->logical_memory[(pages_allocated - 1) * mm->physical_memory.page_size + j];
+            }
+            //mm->physical_memory.memory[i * mm->physical_memory.page_size] = process_id;
         }
     }
 
@@ -148,9 +165,11 @@ void view_memory(MemoryManager *mm) {
     double used_memory_percentage = (double)used_memory / mm->physical_memory.size * 100;
     printf("Uso da memória: %.2f%%\n", used_memory_percentage);
 
-    for (int i = 0; i < mm->physical_memory.num_frames; i++) {
+    //mm->physical_memory.memory[i * page_size] = -1;
+    for (int i = 0; i < mm->physical_memory.size; i++) {
         // TO DO: Show process ID in the place of Ocupado
-        printf("Quadro %d: %s\n", i, mm->physical_memory.free_frames[i] ? "Livre" : "Ocupado");
+        //Make translatation
+        printf("Quadro %d: %d\n", i, mm->physical_memory.memory[i]);
     }
 }
 
