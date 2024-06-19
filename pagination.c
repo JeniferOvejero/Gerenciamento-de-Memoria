@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <string.h>
 
 #define MAX_PROCESSES 10
 
@@ -37,8 +38,9 @@ void view_memory(MemoryManager *mm);
 void view_page_table(MemoryManager *mm, int process_id);
 void view_logical_memory(MemoryManager *mm, int process_id);
 void display_menu();
-int int_to_4bit_binary(int n);
-char* get_binary(int n);
+void get_binary(int num, char *binaryStr);
+int binaryStringToInt(char *binaryStr);
+int getIndex(int index);
 
 int main() {
     MemoryManager mm;
@@ -141,29 +143,21 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
     srand(time(NULL));
     for (int i = 0; i < process_size; i++) {
         new_process->logical_memory[i] = rand() % 256; //Se tamanho máximo é 6, vai ser tabela com 6 espaços
-    }
 
-    int pages_allocated = 0;
-    printf("Criando tabela de páginas\n");
-    printf("Número de páginas %d\n", num_pages);
-    for (int i = 0; i < num_pages; i++) {
-        printf("Página %d\n", i);
-        //procura frame vazio
-        for(int j = 0; j < mm->physical_memory.num_frames; j++){
-            if (mm->physical_memory.free_frames[j]) {
-                printf("Quadro vazio na memória física %d\n", j);
-                mm->physical_memory.free_frames[j] = false; 
-                //Adiciona valor na tabela de paǵinas
-                new_process->page_table[i] = j;
+        printf("Criando tabela de páginas\n");
+        printf("Valor %d\n", i);
 
-                // Copia os dados da página lógica para a memória física
-                //j é o frame na memória física
-                //i é a página sendo alocada
-                for (int m = 0; m < mm->physical_memory.page_size; m++) {
-                    printf("Parte %d da página sendo alocada\n", m);
-                    mm->physical_memory.memory[j * mm->physical_memory.page_size + m] = new_process->logical_memory[i * mm->physical_memory.page_size + m];
-                }
-                pages_allocated++;
+        //procura espaço vazio
+        for(int j = 0; j < mm->physical_memory.size; j++){
+            if (mm->physical_memory.memory[j] == -1) {
+                printf("Espaço no endereço da memória física %d\n", j);
+
+                int page_index = getIndex(i);    
+                new_process->page_table[page_index] = getIndex(j);
+
+                printf("Parte %d da página sendo alocada\n", i);
+                int final_address = 0; // j + final bit i
+                mm->physical_memory.memory[j] = new_process->logical_memory[i];
                 break;
             }
         }
@@ -187,7 +181,9 @@ void view_memory(MemoryManager *mm) {
     for (int i = 0; i < mm->physical_memory.size; i++) {
         // TO DO: Show process ID in the place of Ocupado
         //Make translatation
-        printf("%s: %d\n", get_binary(i), mm->physical_memory.memory[i]);
+        char address[16];
+        get_binary(i, address);
+        printf("%s: %d\n", address, mm->physical_memory.memory[i]);
     }
 }
 
@@ -198,7 +194,11 @@ void view_page_table(MemoryManager *mm, int process_id) {
             printf("Tamanho do processo: %d bytes\n", mm->processes[i].process_size);
             printf("Tabela de páginas:\n");
             for (int j = 0; j < mm->processes[i].num_pages; j++) {
-                printf("Página %s -> Quadro %s\n", get_binary(j), get_binary(mm->processes[i].page_table[j]));
+                char page[16];
+                get_binary(j, page);
+                char frame[16];
+                get_binary(mm->processes[i].page_table[j], frame);
+                printf("Página %s -> Quadro %s\n", page, frame);
             }
             return;
         }
@@ -214,7 +214,9 @@ void view_logical_memory(MemoryManager *mm, int process_id) {
             printf("Tamanho do processo: %d bytes\n", mm->processes[i].process_size);
             printf("Tabela de páginas:\n");
             for (int j = 0; j < mm->processes[i].process_size; j++) {
-                printf("Endereço %s -> Valor %d\n", get_binary(j), mm->processes[i].logical_memory[j]);
+                char adress[16];
+                get_binary(j, adress);
+                printf("Endereço %s -> Valor %d\n", adress, mm->processes[i].logical_memory[j]);
             }
             return;
         }
@@ -223,19 +225,47 @@ void view_logical_memory(MemoryManager *mm, int process_id) {
     printf("Processo %d não encontrado.\n", process_id);
 }
 
-int int_to_4bit_binary(int n){
-    n = n & 0xF;
-    return n;
+void get_binary(int num, char *binaryStr) {
+    unsigned int mask = 1 << 14;
+    int pos = 0;
+    for (int i = 0; i < 15; i++) {
+        binaryStr[pos++] = (num & mask) ? '1' : '0';
+        mask >>= 1;
+    }
+    binaryStr[pos] = '\0';
 }
 
-char* get_binary(int n) {
-    int binary = int_to_4bit_binary(n);
-    char* binaryString = (char*)malloc(4 * sizeof(char));
-    for (int i = 3; i >= 0; i--) {
-        binaryString[3 - i] = ((binary >> i) & 1) ? '1' : '0';
+int binaryStringToInt(char *binaryStr) {
+    int result = 0;
+    int len = strlen(binaryStr);
+    for (int i = 0; i < len; i++) {
+        if (binaryStr[i] == '1') {
+            result += (1 << (len - 1 - i));
+        }
+    }
+    return result;
+}
+
+int getIndex(int index) {
+    char binaryStr[16];
+    get_binary(index, binaryStr);
+    printf("Binary representation of %d is: %s\n", index, binaryStr);
+
+    char partStr[16];
+    int startPos = 8;
+    int length = 6;
+
+    if (startPos + length > 15) {
+        length = 15 - startPos;
     }
 
-    return binaryString;
+    strncpy(partStr, binaryStr + startPos, length);
+    partStr[length] = '\0';
+
+    printf("%s\n", partStr);
+
+    int extractedInt = binaryStringToInt(partStr);
+    return extractedInt;
 }
 
 void display_menu() {
