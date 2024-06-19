@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define MAX_PROCESSES 10
+#define BINARY_SIZE 8
 
 typedef struct {
     int process_id;
@@ -115,7 +116,8 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
         return;
     }
 
-    int num_pages = (process_size + mm->physical_memory.page_size - 1) / mm->physical_memory.page_size;
+    //Bug malloc(): corrupted top size
+    int num_pages = (process_size + mm->physical_memory.page_size - 1) / mm->physical_memory.page_size; // 4 + 6 - 1 / 6
     int free_frames_needed = num_pages;
     int free_frames_count = 0;
 
@@ -181,7 +183,7 @@ void view_memory(MemoryManager *mm) {
     for (int i = 0; i < mm->physical_memory.size; i++) {
         // TO DO: Show process ID in the place of Ocupado
         //Make translatation
-        char address[16];
+        char address[BINARY_SIZE];
         get_binary(i, address);
         printf("%s: %d\n", address, mm->physical_memory.memory[i]);
     }
@@ -194,9 +196,9 @@ void view_page_table(MemoryManager *mm, int process_id) {
             printf("Tamanho do processo: %d bytes\n", mm->processes[i].process_size);
             printf("Tabela de páginas:\n");
             for (int j = 0; j < mm->processes[i].num_pages; j++) {
-                char page[16];
+                char page[BINARY_SIZE];
                 get_binary(j, page);
-                char frame[16];
+                char frame[BINARY_SIZE];
                 get_binary(mm->processes[i].page_table[j], frame);
                 printf("Página %s -> Quadro %s\n", page, frame);
             }
@@ -214,7 +216,7 @@ void view_logical_memory(MemoryManager *mm, int process_id) {
             printf("Tamanho do processo: %d bytes\n", mm->processes[i].process_size);
             printf("Tabela de páginas:\n");
             for (int j = 0; j < mm->processes[i].process_size; j++) {
-                char adress[16];
+                char adress[BINARY_SIZE];
                 get_binary(j, adress);
                 printf("Endereço %s -> Valor %d\n", adress, mm->processes[i].logical_memory[j]);
             }
@@ -226,9 +228,9 @@ void view_logical_memory(MemoryManager *mm, int process_id) {
 }
 
 void get_binary(int num, char *binaryStr) {
-    unsigned int mask = 1 << 14;
+    unsigned int mask = 1 << BINARY_SIZE - 2;
     int pos = 0;
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < BINARY_SIZE - 1; i++) {
         binaryStr[pos++] = (num & mask) ? '1' : '0';
         mask >>= 1;
     }
@@ -247,16 +249,17 @@ int binaryStringToInt(char *binaryStr) {
 }
 
 int getIndex(int index) {
-    char binaryStr[16];
+    char binaryStr[BINARY_SIZE];
     get_binary(index, binaryStr);
     printf("Binary representation of %d is: %s\n", index, binaryStr);
 
-    char partStr[16];
-    int startPos = 8;
-    int length = 6;
+    char partStr[BINARY_SIZE];
+    int startPos = 0;
+    int length = BINARY_SIZE - 1;
 
-    if (startPos + length > 15) {
-        length = 15 - startPos;
+    //Deixar maleável
+    if (startPos + length > BINARY_SIZE - 1) {
+        length = (BINARY_SIZE -1) - startPos;
     }
 
     strncpy(partStr, binaryStr + startPos, length);

@@ -9,3 +9,6 @@ gcc -o <nome_arquivo_binario> pagination.c
 ## EXECUTE O PROGRAMA
 
 ./<nome_arquivo_binario>
+
+## OBSERVAÇÕES
+- Os endereços tem o limite de um byte
