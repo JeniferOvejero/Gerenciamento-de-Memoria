@@ -5,8 +5,8 @@
 #include <string.h>
 #include <math.h>
 
-#define MAX_PROCESSES 10
-#define BINARY_SIZE 8
+#define MAX_PROCESSES 24
+#define BINARY_SIZE 7
 
 typedef struct {
     int process_id;
