@@ -4,7 +4,7 @@ Trabalho 2 da Máteria de Sistemas Operacionais INE5611-04238A/B (20241), Gerenc
 ## COMPILE O PROGRAMA
 Assumindo que você tenha instalado o compilador GCC (GNU C Compiler).
 
-gcc -o <nome_arquivo_binario> pagination.c
+gcc -o <nome_arquivo_binario> pagination.c -lm
 
 ## EXECUTE O PROGRAMA
 
