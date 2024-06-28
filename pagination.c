@@ -105,7 +105,6 @@ void initialize_memory(MemoryManager *mm, int physical_size, int page_size, int 
 
     printf("Criando memória física");
     for (int i = 0; i < mm->physical_memory.size; i++) { //num_frames 
-        //printf("%d", mm->physical_memory.memory[i * page_size]);
         mm->physical_memory.free_frames[i] = true;
         mm->physical_memory.memory[i] = -1; // -1 indica que está livre
     }
@@ -117,7 +116,6 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
         return;
     }
 
-    //Bug malloc(): corrupted top size
     int num_pages = (process_size + mm->physical_memory.page_size - 1) / mm->physical_memory.page_size; // 4 + 6 - 1 / 6
     int free_frames_needed = num_pages;
     int free_frames_count = 0;
@@ -196,10 +194,7 @@ void view_memory(MemoryManager *mm) {
     double used_memory_percentage = (double)used_memory / mm->physical_memory.size * 100;
     printf("Uso da memória: %.2f%%\n", used_memory_percentage);
 
-    //mm->physical_memory.memory[i * page_size] = -1;
     for (int i = 0; i < mm->physical_memory.size; i++) {
-        // TO DO: Show process ID in the place of Ocupado
-        //Make translatation
         char address[BINARY_SIZE];
         get_binary(i, address, mm);
         printf("%s: %d\n", address, mm->physical_memory.memory[i]);
@@ -246,7 +241,7 @@ void view_logical_memory(MemoryManager *mm, int process_id) {
 }
 
 void get_binary(int num, char *binaryStr, MemoryManager *mm) {
-    int length = BINARY_SIZE - ((int)floor(log(mm->physical_memory.page_size) / log(2)));
+    int length = BINARY_SIZE - 2;
     unsigned int mask = 1 << length - 1;
     int pos = 0;
     for (int i = 0; i < length; i++) {
