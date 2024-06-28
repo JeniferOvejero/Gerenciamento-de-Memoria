@@ -144,8 +144,6 @@ void create_process(MemoryManager *mm, int process_id, int process_size) {
     srand(time(NULL));
     for (int i = 0; i < process_size; i++) {
         new_process->logical_memory[i] = rand() % 256; //Se tamanho máximo é 6, vai ser tabela com 6 espaços
-        printf("Criando tabela de páginas\n");
-        printf("Valor %d\n", i);
     }
 
     int pages_allocated = 0;
